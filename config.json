@@ -1,10 +1,10 @@
 {
   "other": {
-    "iconGlowColor": "000,000,000",
-    "fontColor": "255,255,255",
-    "backgroundBlur": 5,
+    "iconGlowColor": "0, 255, 255",
+    "fontColor": "255, 255, 255",
+    "backgroundBlur": 3,
     "description": "𝓦𝓮𝓵𝓬𝓸𝓶𝓮",
-    "version": "1.0.15 B"
+    "version": "Version 1.0.46 B"
   },
 
   "links": [
@@ -20,20 +20,8 @@
     "dystopiaaa.mp3"
   ],
 
-  "mousesetting": {
-    "backgroundSensitivity": 0.1,
-    "backgroundMaxSpeed": 4.0,
-    "backgroundSlowDistance": 270,
-    "backgroundMoveDistance": 20
-  },
-
-  "controls": {
-    "play": { "text": "▶", "size": 16, "offsetX": 1, "offsetY": 0 },
-    "pause": { "text": "⏸", "size": 24, "offsetX": 0, "offsetY": -3 },
-    "next": { "text": "⏭", "size": 20, "offsetX": 1, "offsetY": -2 },
-    "prev": { "text": "⏮", "size": 20, "offsetX": -1, "offsetY": -2 }
-  }
 }
+
 
 
 
