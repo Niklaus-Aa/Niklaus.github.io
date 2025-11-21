@@ -6,23 +6,32 @@
 <title>Piyo Profile</title>
 
 <script>
+// =========================================================
+// キャッシュを無視するための共通関数とタイムスタンプ
+// =========================================================
+const TIMESTAMP = new Date().getTime(); 
+
+function getCacheBustedUrl(url) {
+    if (url.includes('?')) {
+        return `${url}&t=${TIMESTAMP}`;
+    }
+    return `${url}?t=${TIMESTAMP}`;
+}
+
 // 毎回開くたびに新しいフォントが使用されるように、キャッシュを無効化する処理
 (function() {
-    // 現在時刻をミリ秒で取得し、ユニークなクエリパラメータとして使用
-    const timestamp = new Date().getTime(); 
-    
     // @font-faceルールにキャッシュ無効化のためのクエリパラメータを追加
     const fontRules = `
         @font-face {
             font-family: 'Jfont';
-            src: url('Jfont.woff?v=${timestamp}') format('woff');
+            src: url('${getCacheBustedUrl('Jfont.woff')}') format('woff');
             font-weight: normal;
             font-style: normal;
-            font-display: swap; /* フォントの読み込み中に代替フォントを表示 */
+            font-display: swap; 
         }
         @font-face {
             font-family: 'Efont';
-            src: url('Efont.woff?v=${timestamp}') format('woff');
+            src: url('${getCacheBustedUrl('Efont.woff')}') format('woff');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -40,11 +49,9 @@
 /* ---------------- 基本スタイル ---------------- */
 *{margin:0;padding:0;box-sizing:border-box;}
 body,html{
-  width:100%;height:100%;overflow:hidden;
-  /* カスタムフォントを適用 */
+  width:100%;height:100%;overflow-x:hidden; 
   font-family:'Jfont','Efont',sans-serif;
   font-size:16px;color:white;background:#000;
-  /* フォントを滑らかにする設定 */
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -56,7 +63,6 @@ body,html{
   width:110%; height:110%;
   transform:translate3d(-50%,-50%,0) scale(1.1);
   object-fit:cover; z-index:0; will-change: transform;
-  /* 背景を暗くする設定を削除し、ブラーのみ残す */
   filter: blur(5px); 
 }
 
@@ -64,14 +70,13 @@ body,html{
 .center-box{
   position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
   text-align:center; z-index:2;
+  transition: top 0.3s ease, transform 0.3s ease; 
 }
 .icon{width:150px; height:150px; border-radius:50%; overflow:hidden; box-shadow:0 0 40px rgba(246,59,225,0.6);}
 .name{margin-top:20px; font-size:32px; text-shadow:0 0 5px pink;}
 .desc{margin-top:8px; font-size:28px; opacity:0.9; text-shadow:0 0 5px pink;}
 
-/* 英文字だけ大きくする */
 .english{
-  /* カスタムフォントを適用 */
   font-family:'Efont',sans-serif; 
   font-size:1.1em;
 }
@@ -82,18 +87,39 @@ body,html{
   background:rgba(0,0,0,0.2); border-radius:25px; backdrop-filter:blur(10px);
   padding:15px 20px; color:white; box-shadow:0 0 30px rgba(0,0,0,0.7);
   display:flex; flex-direction:column; justify-content:space-between; z-index:2;
+  transition: width 0.3s ease, right 0.3s ease, transform 0.3s ease;
 }
-.music-info{font-size:20px;text-align:left;text-shadow:0 0 8px rgba(255,255,255,0.7);}
+
+/* 曲名スクロールのためのコンテナ */
+.music-title-container {
+    max-width: calc(100% - 130px); 
+    overflow: hidden; 
+    white-space: nowrap; 
+}
+.music-info{
+  font-size:20px;
+  text-align:left;
+  text-shadow:0 0 8px rgba(255,255,255,0.7);
+  animation: none;
+  display: inline-block;
+  transform-origin: left center; 
+  transform: scale(1); 
+}
+
 .controls{display:flex;justify-content:flex-end;gap:15px;margin-top:10px;}
-/* ボタンを画像対応に変更: font-familyとテキスト関連のスタイルを削除/無視 */
 .control-button{width:35px;height:35px;border-radius:50%;border:none;background:rgba(255,255,255,0.3);
   backdrop-filter:blur(5px);cursor:pointer;box-shadow:0 0 10px rgba(0,0,0,0.5);
   display:flex;align-items:center;justify-content:center;transition: transform 0.1s;}
-/* .control-button span.btn-textは画像化に伴い削除/無視します */
 
-/* --- 追加: ボタン内の画像スタイル --- */
+/* ✅ 修正: ボタンのアクティブ状態に押下感を追加 */
+.control-button:active {
+    transform: scale(0.95); /* 押している間、少し小さく */
+    filter: brightness(1.2); /* 押している間、少し明るく */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); /* シャドウを弱くする */
+}
+/* -------------------------------------------------------- */
+
 .control-icon {
-    /* ボタン本体(35x35px)に収まるようにサイズを設定 (700x700pxの画像を縮小表示) */
     width: 60%; 
     height: 60%; 
     object-fit: contain;
@@ -110,36 +136,145 @@ body,html{
   to{text-shadow:0 0 15px #fff;}
 }
 
+/* ---------------- 音量調整バー ---------------- */
+.volume-box{
+    position:absolute; top:25px; right:30px; 
+    width:200px; 
+    height: 50px;
+    background:rgba(0,0,0,0.2); border-radius:10px; backdrop-filter:blur(10px);
+    padding:10px 15px; color:white; box-shadow:0 0 15px rgba(0,0,0,0.5);
+    z-index:2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: top 0.3s ease, right 0.3s ease, left 0.3s ease;
+}
+
+.volume-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.volume-container{
+    width:100%;height:6px;background:rgba(255,255,255,0.2);border-radius:3px;overflow:hidden;
+    margin-top:5px;cursor:pointer;position:relative;
+}
+.volume-bar{
+    width:100%;height:100%;background:rgba(255,255,255,0.7);border-radius:3px;
+}
+.volume-knob{
+    width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.9);
+    position:absolute;top:50%;transform:translate(-50%,-50%);cursor:pointer;
+    left: 100%; /* 初期位置 */
+}
+
 /* ---------------- 下部リンク / バージョン ---------------- */
-.links{position:absolute;bottom:20px;width:100%;text-align:center; z-index:2;}
+.links{
+    position:absolute;bottom:20px;width:100%;text-align:center; z-index:2; 
+    transition: bottom 0.3s ease, left 0.3s ease, transform 0.3s ease; 
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: center;
+}
 .links img{width:40px;margin:0 10px;cursor:pointer;border-radius:50%;filter:drop-shadow(0 0 var(--link-shadow,5px) black);}
 #version{
-  position:absolute;bottom:20px;left:20px;color:white;
-  /* 黒いglowを適用 */
+  position:absolute;
+  top: calc(100% - 20px - 1.5em); 
+  left:20px;
+  color:white;
   text-shadow:0 0 10px black, 0 0 5px black;
   font-size:18px; z-index:2;
+  bottom: auto; 
 }
 
 /* ---------------- Enter Overlay ---------------- */
 #enter-overlay{
   position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.9); /* 暗さは維持 */
+  background:rgba(0,0,0,0.9); 
   z-index:10;
   display:flex; justify-content:center; align-items:center;
-  cursor:pointer;
-  opacity:1; 
-  /* 修正: transitionからtransformを削除 */
-  transition:opacity 0.5s ease, visibility 0.5s ease;
-  visibility:visible;
+  cursor:pointer; 
+  opacity:0; 
+  transition:opacity 0.5s ease, visibility 0.5s ease; 
+  visibility:hidden; 
 }
 .enter-text{
   font-size:48px; font-weight:bold;
   color:white;
   text-shadow:0 0 20px white;
-  animation: none; /* pulseアニメーションを削除 */
-  /* 追加: テキストの縮小アニメーションのためのtransitionを設定 */
+  animation: none; 
   transition: transform 0.5s ease;
-  transform: scale(1); /* 初期スケール */
+  transform: scale(1); 
+}
+
+/* ---------------- Loading Overlay ---------------- */ 
+#loading-overlay{
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,1); 
+  z-index:20; 
+  display:flex; justify-content:center; align-items:center;
+  flex-direction: column;
+  color:white;
+  opacity:1; 
+  transition:opacity 0.5s ease; 
+  visibility:visible;
+}
+.loading-text{
+  font-size:32px; font-weight:bold;
+  margin-bottom: 20px;
+  text-shadow:0 0 10px white;
+}
+.progress-bar-container{
+  width: 80%;
+  max-width: 300px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.loading-progress-bar{
+  width: 0%;
+  height: 100%;
+  background: white; 
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+/* ---------------- レスポンシブ メディアクエリ ---------------- */
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+    .center-box {
+        top: 25%; 
+        transform: translate(-50%, -25%);
+    }
+
+    .music-box {
+        right: 50%; 
+        transform: translateX(50%);
+    }
+    
+    .links {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    #version {
+        top: 20px; 
+        left: 20px;
+        bottom: auto;
+    }
+}
+
+@media (max-width: 500px) {
+    .music-box {
+        width: calc(100vw - 40px);
+        max-width: 450px; 
+    }
+    
+    .name { font-size: 28px; }
+    .desc { font-size: 24px; }
+    .music-info { font-size: 18px; }
 }
 </style>
 </head>
@@ -149,21 +284,42 @@ body,html{
   <source src="background.mp4" type="video/mp4">
 </video>
 
+<div id="loading-overlay">
+  <div class="loading-text">LOADING...</div>
+  <div id="loading-percent" style="font-size:24px; margin-bottom:10px; color:white; text-shadow:0 0 5px white;">0%</div>
+  <div class="progress-bar-container">
+    <div id="loading-progress-bar" class="loading-progress-bar"></div>
+  </div>
+</div>
+
 <div id="enter-overlay">
   <div class="enter-text">Click to Enter!</div>
 </div>
 
 <div id="glow"></div>
 
-<div class="center-box">
-  <img src="icon.png" class="icon">
-  <div class="name" id="name-text">𝓗𝓲 𝓽𝓱𝓮𝓻𝓮! 𝓘'𝓶 𝓢𝓱𝓪𝔂𝓪𝓷</div>
-  <div class="desc" id="desc-text">𝓦𝓮𝓵𝓬𝓸𝓶𝓮</div>
+<div class="volume-box" id="volume-box">
+  <div class="volume-info">
+    <span id="volume-label">VOLUME</span>
+    <span id="volume-percent">100%</span>
+  </div>
+  <div class="volume-container" id="volume-container">
+    <div class="volume-bar" id="volume-bar"></div>
+    <div class="volume-knob" id="volume-knob"></div>
+  </div>
+</div>
+
+<div class="center-box" id="center-box">
+  <img src="icon.png" class="icon" id="icon-img">
+  <div class="name" id="name-text">ぴよだよ～＾＾</div>
+  <div class="desc" id="desc-text">説明文がここに入ります</div>
 </div>
 
 <div class="music-box">
   <div style="display:flex; justify-content:space-between; align-items:center;">
-    <div class="music-info" id="current-music">---</div>
+    <div class="music-title-container">
+        <div class="music-info" id="current-music">---</div>
+    </div>
     <div class="controls">
       <button class="control-button" id="prev"><img src="prev.png" alt="Prev" class="control-icon"></button>
       <button class="control-button" id="play-pause"><img src="play.png" alt="Play" id="play-pause-icon" class="control-icon"></button>
@@ -184,7 +340,22 @@ body,html{
 <div class="links" id="links-box"></div>
 <div id="version">v1.0</div>
 
+
 <script>
+// =========================================================
+// 静的アセットのキャッシュ無視設定
+// =========================================================
+document.getElementById('icon-img').src = getCacheBustedUrl('icon.png');
+// NOTE: ボタンアイコンのsrc設定はinitializeApp内でDOMが揃った後に実行します。
+
+const videoSource = document.querySelector('#background-video source');
+if (videoSource) {
+    videoSource.src = getCacheBustedUrl(videoSource.getAttribute('src'));
+    document.getElementById('background-video').load(); 
+}
+// =========================================================
+
+
 // ---------------- 背景パララックス ----------------
 const bg = document.getElementById('background-video');
 let mouseX=0, mouseY=0, currentX=0, currentY=0;
@@ -200,140 +371,510 @@ function animateBackground(){
   bg.style.transform=`translate3d(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px),0) scale(1.1)`;
   requestAnimationFrame(animateBackground);
 }
-animateBackground();
+// animateBackgroundは、アプリがロードされた後、またはDOMContentLoaded後に開始します。
 
-// ---------------- ミュージックプレイヤーなど ----------------
-fetch('config.json').then(r=>r.json()).then(cfg=>{
-  const glow = document.getElementById('glow');
-  const bgVideo = document.getElementById('background-video');
-  const enterOverlay = document.getElementById('enter-overlay');
+// ---------------- Enter画面とLoading画面の制御 ----------------
 
-  // 設定からスタイルを適用
-  glow.style.background=`rgb(${cfg.other.iconGlowColor})`;
-  document.body.style.color=`rgb(${cfg.other.fontColor})`;
-  document.getElementById('desc-text').innerText = cfg.other.description || '';
-  document.getElementById('version').innerText = cfg.other.version || 'v1.0';
-
-  // 背景にブラーを設定 (暗さ設定を削除)
-  const blurValue = cfg.other.backgroundBlur || 5; 
-  const activeFilter = `blur(${blurValue}px)`;
-  
-  // Enter前のCSSで初期ブラーを設定済みだが、念のためここでも設定
-  bgVideo.style.filter = activeFilter;
-
-
-  // リンク生成
-  const linkBox = document.getElementById('links-box');
-  cfg.links.forEach(item=>{
-    let url = item.url || item;
-    let icon = item.icon || 'link.png';
-    const a = document.createElement('a');
-    a.href=url; a.target='_blank';
-    a.innerHTML=`<img src="${icon}">`;
-    if(item.shadow) {
-        a.querySelector('img').style.setProperty('--link-shadow', `${item.shadow}px`);
-    }
-    linkBox.appendChild(a);
-  });
-
-  // 音楽
-  const audio=document.getElementById('audio');
-  const currentMusicText=document.getElementById('current-music');
-  const progressBar=document.getElementById('progress-bar');
-  const knob=document.getElementById('progress-knob');
-  const playPauseBtn=document.getElementById('play-pause');
-  const nextBtn=document.getElementById('next');
-  const prevBtn=document.getElementById('prev');
-  const currentTimeLabel=document.getElementById('current-time');
-  const totalTimeLabel=document.getElementById('total-time');
-  
-  // ★追加: play/pauseボタンの画像要素を取得
-  const playPauseIcon = document.getElementById('play-pause-icon'); 
-  
-  let list=cfg.musics, current=0;
-  let hasPlayedOnce = false; 
-
-  function getSongName(f){ return f.replace(/\.mp3$/i,''); }
-  
-  // ★変更: ボタンのテキストではなく、画像のsrcを切り替えるように修正
-  function updatePlayPause(){ 
-    // audio.pausedがtrue（停止中）なら再生画像(play.png)、false（再生中）なら一時停止画像(pause.png)を表示
-    playPauseIcon.src = audio.paused ? 'play.png' : 'pause.png'; 
-    playPauseIcon.alt = audio.paused ? 'Play' : 'Pause'; 
-  }
-
-  function playMusic(index){
-    current=index;
-    audio.src=list[current];
-    if(hasPlayedOnce) {
-        audio.play().catch(e => console.error("Audio play failed:", e));
-    }
-    // 曲名設定
-    if (list[current]) {
-        currentMusicText.innerHTML = getSongName(list[current]).replace(/[A-Za-z0-9]/g, m=>`<span class="english">${m}</span>`);
-    } else {
-        currentMusicText.innerHTML = '---';
-    }
-    updatePlayPause();
-  }
-  
-  // Enter画面クリック時の処理
-  function enterOverlayClick() {
-    if (list.length > 0) {
-        hasPlayedOnce = true;
-        playMusic(0);
-    }
-    // Enter解除後の背景フィルタを適用（暗さなし、ブラーのみ）
-    bgVideo.style.filter = activeFilter;
+/**
+ * Click to Enter! をクリックした時のアニメーション処理 (音楽再生機能を追加)
+ */
+function enterOverlayClick() {
+    const enterOverlay = document.getElementById('enter-overlay');
+    const audio = document.getElementById('audio');
+    const playPauseIcon = document.getElementById('play-pause-icon'); 
     
-    // 修正: テキストのみを縮小
+    // イベントリスナーを即座に解除し、連続クリックを防止
+    enterOverlay.removeEventListener('click', enterOverlayClick);
+    
+    // 1. 音楽再生を試みる (ユーザー操作として実行)
+    if (audio.paused) {
+        audio.play().then(() => {
+            // 再生に成功した場合、アイコンを'pause'に更新
+            playPauseIcon.src = getCacheBustedUrl('pause.png');
+            playPauseIcon.alt = 'Pause';
+        }).catch(e => {
+            console.error("Audio play blocked on Click to Enter:", e);
+            // 再生ブロック時: アイコンはそのまま'play' (停止状態)
+        });
+    }
+    
+    // 2. 画面のフェードアウトアニメーション
+    // Enterテキストを縮小アニメーション
     document.querySelector('.enter-text').style.transform = 'scale(0.5)';
     
-    // オーバーレイ全体（黒い背景）はフェードアウト
+    // Enterオーバーレイをフェードアウト
     enterOverlay.style.opacity = '0';
-    enterOverlay.style.visibility = 'hidden';
-    enterOverlay.removeEventListener('click', enterOverlayClick);
-  }
+    
+    // アニメーション完了後にDOMから隠す
+    setTimeout(() => {
+        enterOverlay.style.visibility = 'hidden';
+    }, 500); // CSSのトランジション時間と合わせる
+}
 
-  // Enter画面にクリックイベントを登録
-  enterOverlay.addEventListener('click', enterOverlayClick);
+function showEnterScreen() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const enterOverlay = document.getElementById('enter-overlay');
+    
+    // ロード画面をフェードアウト
+    loadingOverlay.style.opacity = '0';
+    
+    // Enter画面を表示
+    enterOverlay.style.opacity = '1';
+    enterOverlay.style.visibility = 'visible';
+
+    // フェードアウト完了後にLoading画面をDOMから隠す (500ms)
+    setTimeout(() => {
+        loadingOverlay.style.visibility = 'hidden';
+        
+        // クリックイベントリスナーを登録して、クリック待ち状態に戻す
+        enterOverlay.addEventListener('click', enterOverlayClick);
+        
+    }, 500); // Loadingフェードアウト時間 500ms
+}
 
 
-  function formatTime(sec){ const m=Math.floor(sec/60); const s=Math.floor(sec%60); return `${m}:${s<10?'0'+s:s}`; }
-  audio.addEventListener('loadedmetadata', ()=>{ totalTimeLabel.innerText=formatTime(audio.duration); });
-  audio.addEventListener('timeupdate', ()=>{
-    const percent=(audio.currentTime/audio.duration)*100;
-    progressBar.style.width=percent+'%';
-    knob.style.left=percent+'%';
-    currentTimeLabel.innerText=formatTime(audio.currentTime);
-  });
+/**
+ * メインアプリケーションの初期化
+ * @param {Object} cfg - config.jsonの内容
+ * @param {Function} onReady - 初期の曲のメタデータがロードされた後に実行されるコールバック
+ */
+function initializeApp(cfg, onReady) {
+    animateBackground();
+    
+    const compactQuery = window.matchMedia('(max-width: 900px), (max-aspect-ratio: 1/1)');
+    const glow = document.getElementById('glow');
+    const bgVideo = document.getElementById('background-video');
+    const enterOverlay = document.getElementById('enter-overlay');
+    const audio=document.getElementById('audio');
+    const currentMusicText=document.getElementById('current-music');
+    const playPauseIcon = document.getElementById('play-pause-icon'); 
+    const linkBox = document.getElementById('links-box');
+    const musicBox = document.querySelector('.music-box'); 
+    const progressBar=document.getElementById('progress-bar');
+    const knob=document.getElementById('progress-knob');
+    const playPauseBtn=document.getElementById('play-pause');
+    const nextBtn=document.getElementById('next');
+    const prevBtn=document.getElementById('prev');
+    const currentTimeLabel=document.getElementById('current-time');
+    const totalTimeLabel=document.getElementById('total-time');
+    const centerBox = document.getElementById('center-box');
+    
+    // 音量バー要素の取得
+    const volumeContainer = document.getElementById('volume-container');
+    const volumeBar = document.getElementById('volume-bar');
+    const volumeKnob = document.getElementById('volume-knob');
+    const volumePercent = document.getElementById('volume-percent');
 
-  // 曲終了時に次の曲
-  audio.addEventListener('ended', ()=>{ playMusic((current+1)%list.length); });
 
-  // プログレスバー操作 (省略なし)
-  let dragging=false;
-  knob.addEventListener('mousedown',()=>dragging=true);
-  document.addEventListener('mouseup',()=>dragging=false);
-  document.addEventListener('mousemove', e=>{
-    if(dragging){
-      const rect=document.getElementById('progress-container').getBoundingClientRect();
-      let percent=(e.clientX-rect.left)/rect.width;
-      percent=Math.max(0,Math.min(1,percent));
-      audio.currentTime=percent*audio.duration;
+    let list = cfg.musics || [], current = 0;
+
+    // 静的アセットのキャッシュ無視設定 (DOMが揃った後に実行)
+    document.getElementById('prev').querySelector('img').src = getCacheBustedUrl('prev.png');
+    document.getElementById('play-pause-icon').src = getCacheBustedUrl('play.png');
+    document.getElementById('next').querySelector('img').src = getCacheBustedUrl('next.png');
+
+
+    // 設定からスタイルを適用
+    glow.style.background=`rgb(${cfg.other.iconGlowColor})`;
+    document.body.style.color=`rgb(${cfg.other.fontColor})`;
+    document.getElementById('desc-text').innerText = cfg.other.description || 'description'; 
+    document.getElementById('version').innerText = cfg.other.version || 'v1.0'; 
+
+    const blurValue = cfg.other.backgroundBlur || 5; 
+    const activeFilter = `blur(${blurValue}px)`;
+    bgVideo.style.filter = activeFilter; 
+
+    // リンク生成
+    cfg.links.forEach(item=>{
+      let url = item.url || item;
+      let icon = item.icon || 'link.png';
+      const a = document.createElement('a');
+      a.href=url; a.target='_blank';
+      
+      a.innerHTML=`<img src="${getCacheBustedUrl(icon)}">`;
+      
+      if(item.shadow) {
+          a.querySelector('img').style.setProperty('--link-shadow', `${item.shadow}px`);
+      }
+      linkBox.appendChild(a);
+    });
+    
+    // =========================================================
+    // リンクとミュージックプレイヤーの重なり防止ロジック
+    // =========================================================
+    
+    function calculateLinkHalfWidth() {
+        const linksCount = cfg.links ? cfg.links.length : 0;
+        const totalWidth = linksCount * 60; // リンク1個あたり 60px (40px + 20px)
+        return totalWidth / 2;
     }
-  });
+    
+    function adjustPlayerPosition(linkHalfWidth) {
+        const PLAYER_MIN_WIDTH = 450;
+        const DEFAULT_RIGHT_MARGIN = 30;
+        const SAFE_MARGIN_HORIZONTAL = 50; 
 
-  // 再生・停止ボタン (省略なし)
-  playPauseBtn.addEventListener('click', ()=>{
-    if(audio.paused) audio.play(); else audio.pause();
-    updatePlayPause();
-  });
-  nextBtn.addEventListener('click', ()=>{ playMusic((current+1)%list.length); });
-  prevBtn.addEventListener('click', ()=>{ playMusic((current-1+list.length)%list.length); });
+        const halfScreenWidth = window.innerWidth / 2;
+        const linkWidthFromCenter = linkHalfWidth;
+
+        const linkRightEdgeFromCenter = linkWidthFromCenter;
+        const playerLeftEdgeFromCenterDefault = halfScreenWidth - (PLAYER_MIN_WIDTH + DEFAULT_RIGHT_MARGIN);
+        
+        
+        if (linkRightEdgeFromCenter + SAFE_MARGIN_HORIZONTAL > playerLeftEdgeFromCenterDefault) {
+            musicBox.style.right = '50%';
+            musicBox.style.transform = 'translateX(50%)';
+            
+            return true; 
+        } else {
+            musicBox.style.right = `${DEFAULT_RIGHT_MARGIN}px`;
+            musicBox.style.transform = 'none';
+            
+            return false;
+        }
+    }
+
+
+    const SAFE_MARGIN_VERTICAL = 50; 
+
+    function adjustLinkPosition() {
+        
+        if (!compactQuery.matches) {
+            
+            const isOverlapping = adjustPlayerPosition(calculateLinkHalfWidth());
+            
+            if (isOverlapping) {
+                
+                // Wide screen, overlap: Move center box up via inline style
+                centerBox.style.top = '25%'; 
+                centerBox.style.transform = 'translate(-50%, -25%)';
+
+                if (!musicBox || !linkBox || !linkBox.hasChildNodes()) return;
+
+                const musicBoxRect = musicBox.getBoundingClientRect();
+                const musicBoxTop = musicBoxRect.top;
+                
+                const musicBoxTopFromBottom = window.innerHeight - musicBoxTop;
+                
+                const newBottom = musicBoxTopFromBottom + SAFE_MARGIN_VERTICAL;
+
+                linkBox.style.bottom = `${newBottom}px`;
+            } else {
+                
+                // Wide screen, no overlap: Center center box via inline style
+                centerBox.style.top = '50%';
+                centerBox.style.transform = 'translate(-50%, -50%)';
+                
+                linkBox.style.bottom = '20px'; 
+            }
+            
+        } else {
+            // Compact layout: Clear inline styles so CSS @media takes over
+            centerBox.style.top = ''; 
+            centerBox.style.transform = ''; 
+            
+            if (!musicBox || !linkBox || !linkBox.hasChildNodes()) return;
+
+            const musicBoxRect = musicBox.getBoundingClientRect();
+            const musicBoxTop = musicBoxRect.top;
+            
+            const musicBoxTopFromBottom = window.innerHeight - musicBoxTop;
+            
+            const newBottom = musicBoxTopFromBottom + SAFE_MARGIN_VERTICAL;
+
+            linkBox.style.bottom = `${newBottom}px`;
+        }
+    }
+
+    compactQuery.addListener(adjustLinkPosition); 
+    window.addEventListener('resize', adjustLinkPosition); 
+    
+    setTimeout(adjustLinkPosition, 200); 
+    // =========================================================
+
+    // ---------------- 音量制御ロジック ----------------
+    
+    audio.volume = 1.0; 
+    
+    function updateVolumeDisplay() {
+        const percent = audio.volume * 100;
+        volumeBar.style.width = percent + '%';
+        volumeKnob.style.left = percent + '%';
+        volumePercent.innerText = Math.round(percent) + '%';
+    }
+
+    let volumeDragging = false;
+    volumeKnob.addEventListener('mousedown', (e) => {
+        e.preventDefault(); 
+        volumeDragging = true;
+    });
+    
+    // プログレスバークリック操作
+    volumeContainer.addEventListener('click', e => {
+      if (volumeDragging) return; 
+      
+      const rect = volumeContainer.getBoundingClientRect();
+      let volume = (e.clientX - rect.left) / rect.width;
+      volume = Math.max(0, Math.min(1, volume)); 
+      audio.volume = volume;
+      updateVolumeDisplay();
+    });
+
+    // グローバルマウスイベント
+    document.addEventListener('mouseup', () => volumeDragging = false);
+    document.addEventListener('mousemove', e => {
+      if (volumeDragging) {
+        const rect = volumeContainer.getBoundingClientRect();
+        let volume = (e.clientX - rect.left) / rect.width;
+        volume = Math.max(0, Math.min(1, volume)); 
+        audio.volume = volume;
+        updateVolumeDisplay();
+      }
+    });
+
+    updateVolumeDisplay(); // 初期表示を設定
+    // --------------------------------------------------------
+
+
+    function getSongName(f){ return f.replace(/\.mp3$/i,''); }
+    
+    function updatePlayPause(){ 
+      if (!playPauseIcon) return;
+      
+      // NOTE: この関数は再生ボタンが押された時に呼び出され、audio.pausedの状態が逆になることが前提。
+      // enterOverlayClickで直接アイコンをpauseに更新するため、ここではそのまま。
+    }
+
+    /**
+     * 指定されたインデックスの曲をロードし、オプションで再生を開始する
+     * @param {number} index - 音楽リストのインデックス
+     * @param {boolean} [shouldPlay=false] - ロード後にすぐに再生を開始するかどうか
+     */
+    function playMusic(index, shouldPlay = false){ // 💡 修正: shouldPlayをデフォルトfalseで追加
+      current=index;
+      
+      if (!list[current]) {
+          currentMusicText.innerHTML = '---';
+          currentMusicText.style.animation = 'none';
+          currentMusicText.style.transform = 'none';
+          return;
+      }
+      
+      audio.src = getCacheBustedUrl(list[current]);
+      audio.load(); 
+      
+      const songName = getSongName(list[current]);
+      currentMusicText.innerHTML = songName.replace(/[A-Za-z0-9]/g, m=>`<span class="english">${m}</span>`);
+      
+      // 音楽の再生状態をshouldPlayに基づいて設定
+      if (shouldPlay) { // 💡 修正: shouldPlayがtrueの場合のみ再生開始
+          audio.play().then(() => {
+            // 再生成功時
+            playPauseIcon.src = getCacheBustedUrl('pause.png');
+            playPauseIcon.alt = 'Pause';
+          }).catch(e => {
+            // 再生がブロックされた場合
+            console.error("Audio auto-play blocked:", e);
+            playPauseIcon.src = getCacheBustedUrl('play.png');
+            playPauseIcon.alt = 'Play';
+          });
+      } else {
+        // 停止状態から開始する場合（初回ロード時など）
+        playPauseIcon.src = getCacheBustedUrl('play.png');
+        playPauseIcon.alt = 'Play';
+      }
+
+      // 曲名が長い場合のマーキー処理
+      setTimeout(() => {
+          const container = document.querySelector('.music-title-container');
+          const containerWidth = container ? container.offsetWidth : 0;
+          const textWidth = currentMusicText.offsetWidth;
+
+          if (textWidth > containerWidth && containerWidth > 0) {
+              const scrollDistance = containerWidth - textWidth - 5; 
+              
+              currentMusicText.style.setProperty('--scroll-offset', `${scrollDistance}px`);
+              currentMusicText.style.animation = 'marquee 8s linear infinite alternate'; 
+          } else {
+              currentMusicText.style.animation = 'none';
+              currentMusicText.style.transform = 'none';
+          }
+      }, 0); 
+    }
+    
+    
+    function formatTime(sec){ const m=Math.floor(sec/60); const s=Math.floor(sec%60); return `${m}:${s<10?'0'+s:s}`; }
+    
+    // 永続的なリスナー: メタデータがロードされるたびに合計時間を更新
+    audio.addEventListener('loadedmetadata', ()=>{ totalTimeLabel.innerText=formatTime(audio.duration); });
+
+    audio.addEventListener('timeupdate', ()=>{
+      const percent=(audio.currentTime/audio.duration)*100;
+      progressBar.style.width=percent+'%';
+      knob.style.left=percent+'%';
+      currentTimeLabel.innerText=formatTime(audio.currentTime);
+    });
+
+    audio.addEventListener('ended', ()=>{ 
+        playMusic((current+1)%list.length, true); // 💡 修正: 次の曲をロードし、すぐに再生 (true) を指示
+    });
+
+    // プログレスバー操作
+    let dragging=false;
+    knob.addEventListener('mousedown',(e)=>{ 
+        e.preventDefault(); 
+        dragging=true;
+    });
+    document.addEventListener('mouseup',()=>dragging=false);
+    document.addEventListener('mousemove', e=>{
+      if(dragging){
+        const rect=document.getElementById('progress-container').getBoundingClientRect();
+        let percent=(e.clientX-rect.left)/rect.width;
+        percent=Math.max(0,Math.min(1,percent));
+        audio.currentTime=percent*audio.duration;
+      }
+    });
+
+    // 再生・停止ボタン
+    playPauseBtn.addEventListener('click', ()=>{
+      
+      if(audio.paused) {
+          audio.play().then(() => {
+            // 再生成功時
+            playPauseIcon.src = getCacheBustedUrl('pause.png'); 
+            playPauseIcon.alt = 'Pause';
+          }).catch(e => {
+            // 再生ブロック時
+            console.error("Audio play blocked:", e);
+            playPauseIcon.src = getCacheBustedUrl('play.png'); 
+            playPauseIcon.alt = 'Play';
+          });
+      } else {
+          audio.pause();
+          playPauseIcon.src = getCacheBustedUrl('play.png'); 
+          playPauseIcon.alt = 'Play';
+      }
+    });
+    
+    nextBtn.addEventListener('click', ()=>{ playMusic((current+1)%list.length, !audio.paused); }); // 💡 修正: 再生中なら次の曲も再生
+    prevBtn.addEventListener('click', ()=>{ playMusic((current-1+list.length)%list.length, !audio.paused); }); // 💡 修正: 再生中なら前の曲も再生
+
+    // 初期曲のロード (再生はしない)
+    if (list.length > 0) {
+        // メタデータがロードされたらonReadyを実行する一時的なリスナーを登録
+        audio.addEventListener('loadedmetadata', onReady, { once: true });
+        
+        playMusic(0, false); // 💡 修正: 再生開始指示なし (shouldPlay=false) を明示
+    } else {
+        onReady(); // 音楽リストが空の場合はすぐにコールバックを実行
+    }
+}
+
+
+// ---------------- アセットのプリロードと初期化の制御 ----------------
+
+document.addEventListener('DOMContentLoaded', () => {
+    const loadingProgressBar = document.getElementById('loading-progress-bar');
+    const loadingPercentDisplay = document.getElementById('loading-percent'); 
+    
+    // 1. config.json のロードから開始
+    fetch(getCacheBustedUrl('config.json')) 
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+        return r.json();
+      })
+      .then(cfg => {
+        
+        // 2. プリロードするアセットリストの定義
+        const assetsToLoad = [
+            'icon.png', 'prev.png', 'play.png', 'next.png',
+        ];
+
+        // リンクアイコンを追加
+        if (cfg.links) {
+            cfg.links.forEach(item => {
+                if (item.icon) assetsToLoad.push(item.icon);
+            });
+        }
+        // 最初の音楽ファイルを追加 (全曲ロードすると時間がかかりすぎるため)
+        if (cfg.musics && cfg.musics.length > 0) {
+            assetsToLoad.push(cfg.musics[0]); 
+        }
+        
+        const totalAssets = assetsToLoad.length;
+        let loadedCount = 0;
+        
+        // アセットのロード関数
+        const loadAsset = (assetPath) => {
+            return new Promise((resolve, reject) => {
+                const cacheBustedUrl = getCacheBustedUrl(assetPath);
+                
+                // 画像ファイルのロード
+                if (assetPath.match(/\.(png|jpg|jpeg|gif)$/i)) {
+                    const img = new Image();
+                    img.onload = resolve;
+                    img.onerror = resolve; // ロード失敗しても進行を止めない
+                    img.src = cacheBustedUrl;
+                } 
+                // 音声ファイルのロード
+                else if (assetPath.match(/\.(mp3|wav|ogg)$/i)) {
+                    const audioPreload = new Audio();
+                    audioPreload.addEventListener('canplaythrough', resolve, {once: true});
+                    audioPreload.addEventListener('error', resolve, {once: true});
+                    audioPreload.src = cacheBustedUrl;
+                    audioPreload.load();
+                } 
+                // その他のファイル（主にリンクアイコン以外の、念のためのもの）
+                else {
+                    fetch(cacheBustedUrl).then(resolve).catch(resolve);
+                }
+            }).finally(() => {
+                loadedCount++;
+                const progress = (loadedCount / totalAssets) * 100;
+                loadingProgressBar.style.width = `${progress}%`;
+                
+                // パーセンテージ表示を更新
+                if (loadingPercentDisplay) {
+                    loadingPercentDisplay.innerText = `${Math.round(progress)}%`;
+                }
+            });
+        };
+        
+        // 3. ロードの開始
+        const assetPromises = assetsToLoad.map(loadAsset);
+
+        // 4. 全てのアセットのロード完了を待つ
+        Promise.all(assetPromises).then(() => {
+            // ゲージを100%に
+            loadingProgressBar.style.width = '100%';
+            if (loadingPercentDisplay) { 
+                loadingPercentDisplay.innerText = '100%'; // 確実に100%を表示
+            }
+            
+            // アプリケーションの初期化とEnter画面への遷移（フェードアニメーションあり）
+            setTimeout(() => { 
+                // initializeAppを呼び出し、初期曲のメタデータロードが完了してからshowEnterScreenを呼び出す
+                initializeApp(cfg, showEnterScreen); 
+            }, 100); 
+        });
+
+      })
+      .catch(error => {
+        // config.jsonのロード失敗時（致命的エラー）
+        console.error("Failed to load config.json. Initializing with empty settings.", error);
+        
+        // エラー時でもEnter画面へ遷移
+        const dummyConfig = { musics: [], links: [], other: { iconGlowColor: '255,255,255', fontColor: '255,255,255', description: 'エラー: 設定を読み込めませんでした', version: 'v1.0' } };
+        loadingProgressBar.style.width = '100%';
+        if (loadingPercentDisplay) { 
+            loadingPercentDisplay.innerText = '100%';
+        }
+        setTimeout(() => {
+             initializeApp(dummyConfig, showEnterScreen); // 音楽がないのですぐにshowEnterScreenが呼ばれる
+        }, 100);
+      });
 });
 </script>
 
 </body>
 </html>
-
